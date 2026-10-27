@@ -1,0 +1,20 @@
+## Build output
+bin/
+obj/
+.vs/
+packages/
+*.user
+*.suo
+TestResults/
+*.trx
+
+## Generated locally
+smoke/
+shots/
+*.db
+!samples/*.db
+__pycache__/
+
+## OS files
+.DS_Store
+Thumbs.db
