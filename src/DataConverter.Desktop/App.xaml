@@ -1,0 +1,22 @@
+<Application x:Class="DataConverter.Desktop.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Teal" SecondaryColor="Amber" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign2.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- The app's own colours, independent of theme resource names. -->
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FAFAFA" />
+            <SolidColorBrush x:Key="AppForegroundBrush" Color="#DE000000" />
+            <SolidColorBrush x:Key="AppMutedBrush" Color="#8A000000" />
+            <SolidColorBrush x:Key="AppPanelBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="AppDividerBrush" Color="#1F000000" />
+            <SolidColorBrush x:Key="AppErrorBrush" Color="#B00020" />
+            <SolidColorBrush x:Key="AppSuccessBrush" Color="#1B5E20" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

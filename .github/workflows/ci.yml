@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  linux:
+    name: Core, CLI and tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test tests/DataConverter.Core.Tests -c Release --logger "trx;LogFileName=linux.trx" --results-directory TestResults
+
+      - name: Report test counts
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          ns = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+          files = glob.glob("TestResults/*.trx")
+          if not files:
+              print("::error title=Tests (Linux)::No test results found."); raise SystemExit(1)
+          c = ET.parse(files[0]).getroot().find("t:ResultSummary/t:Counters", ns).attrib
+          print(f"::notice title=Tests (Linux)::{c['total']} tests: {c['passed']} passed, {c['failed']} failed")
+          PY
+
+      - name: Try the CLI on the sample files
+        run: |
+          set -e
+          cli="dotnet run --project src/DataConverter.Cli -c Release --"
+          $cli preview samples/grades-tr.csv --rows 5
+          $cli convert samples/grades-tr.csv out/grades.xlsx
+          $cli import out/grades.xlsx out/school.db --split-by "Şube"
+          $cli tables out/school.db
+          $cli export out/school.db TKM405-41 out/TKM405-41.csv
+          head -3 out/TKM405-41.csv
+
+      - name: Content checks
+        run: python3 tools/check_content.py
+
+      - name: Publish the CLI for macOS and Linux
+        run: |
+          for rid in osx-arm64 osx-x64 linux-x64; do
+            dotnet publish src/DataConverter.Cli -c Release -r $rid --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/dataconv-$rid
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dataconv-cli-macos-linux
+          path: publish/
+
+  windows:
+    name: Build, test and UI smoke test (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build
+        run: dotnet build DataConverter.sln -c Release
+
+      - name: Test
+        run: dotnet test DataConverter.sln -c Release --no-build --logger "trx;LogFileName=windows.trx" --results-directory TestResults
+
+      - name: Report test counts
+        if: always()
+        shell: pwsh
+        run: |
+          $trx = Get-ChildItem TestResults -Filter *.trx -Recurse | Select-Object -First 1
+          if (-not $trx) { Write-Host "::error title=Tests (Windows)::No test results found."; exit 1 }
+          $c = ([xml](Get-Content $trx.FullName)).TestRun.ResultSummary.Counters
+          Write-Host "::notice title=Tests (Windows)::$($c.total) tests: $($c.passed) passed, $($c.failed) failed"
+
+      - name: Make a sample database with the CLI
+        shell: pwsh
+        run: |
+          dotnet src/DataConverter.Cli/bin/Release/net8.0/dataconv.dll import samples/grades.csv smoke-data/school.db --split-by Section
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: UI smoke test
+        shell: powershell
+        run: ./tools/smoke-test.ps1 -Exe src/DataConverter.Desktop/bin/Release/net8.0-windows/DataConverter.exe -Csv samples/grades-tr.csv -Database smoke-data/school.db -OutDir smoke
+
+      - name: Publish the Windows app and CLI
+        shell: pwsh
+        run: |
+          dotnet publish src/DataConverter.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/DataConverter-win-x64
+          dotnet publish src/DataConverter.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/dataconv-win-x64
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-app-tests-and-screenshots
+          path: |
+            publish/
+            TestResults/
+            smoke/
+          if-no-files-found: ignore
