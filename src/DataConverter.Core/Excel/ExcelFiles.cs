@@ -142,7 +142,7 @@ public static class ExcelFiles
     }
 
     /// <summary>True for plain numbers such as 42, -3.5 or 1e3; false for "007", "1,5" or values over 15 digits.</summary>
-    internal static bool TryNumber(string text, out double number)
+    public static bool TryNumber(string text, out double number)
     {
         number = 0;
         if (text.Length == 0 || text.Length > 15 || char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[^1]))

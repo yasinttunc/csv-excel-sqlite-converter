@@ -116,7 +116,7 @@ public partial class MainWindow : Window
             ShowTable(PreviewGrid, data.Take(PreviewRows));
 
             var detail = kind == DataFileKind.Csv
-                ? $"delimiter {DescribeDelimiter(delimiter ?? CsvFormat.DetectDelimiter(TextFiles.Read(path, out var encoding)))}, {encoding.WebName}"
+                ? $"delimiter {DescribeDelimiter(delimiter ?? CsvFormat.DetectDelimiter(TextFiles.Read(path, out _)))}"
                 : $"sheet \"{SheetPicker.SelectedItem}\"";
             SourceInfo.Text = $"{data.RowCount:N0} rows, {data.ColumnCount} columns ({detail})" +
                 (data.RowCount > PreviewRows ? $". Showing the first {PreviewRows}." : ".");

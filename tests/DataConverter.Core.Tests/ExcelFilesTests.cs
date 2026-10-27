@@ -77,8 +77,7 @@ public class ExcelFilesTests
         });
 
         Assert.Equal(new[] { "Notes", "Data" }, ExcelFiles.SheetNames(stream));
-        stream.Position = 0;
-        var table = ExcelFiles.ReadSheet(stream, "data");
+        var table = ExcelFiles.ReadSheet(new MemoryStream(stream.ToArray()), "data");
         Assert.Equal("TKM405", Assert.Single(table.Rows)[0]);
     }
 
